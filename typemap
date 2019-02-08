@@ -1,0 +1,16 @@
+TYPEMAP
+struct VoikkoHandle * O_OBJECT
+
+OUTPUT
+O_OBJECT
+    sv_setref_pv( $arg, "Lingua::Voikko", (void*)$var );
+
+INPUT
+O_OBJECT
+    if( sv_isobject($arg) && (SvTYPE(SvRV($arg)) == SVt_PVMG) )
+        $var = ($type)SvIV((SV*)SvRV( $arg ));
+    else {
+        warn( \"${Package}::$func_name() - $var is not a blessed reference\" );
+	XSRETURN_UNDEF;
+    }
+					    

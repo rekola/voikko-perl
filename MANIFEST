@@ -1,0 +1,8 @@
+Changes
+Makefile.PL
+MANIFEST
+ppport.h
+README
+Voikko.xs
+t/Lingua-Voikko.t
+lib/Lingua/Voikko.pm
