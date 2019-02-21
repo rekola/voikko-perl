@@ -33,6 +33,49 @@ our $VERSION = '0.01';
 require XSLoader;
 XSLoader::load('Lingua::Voikko', $VERSION);
 
+use constant SIJAMUOTO_WEIGHTS => {
+    nimento => 0,
+    keinonto => 2,
+};
+
+use constant MOOD_WEIGHTS => {
+    'A-infinitive' => 0,
+    'MA-infinitive' => 0,
+    indicative => 0,
+    imperative => 2,
+};
+
+use constant CLASS_WEIGHTS => {
+    huudahdussana => 1,
+    nimisana => 0,
+    teonsana => 0,
+    laatusana => 0,
+    paikannimi => 0,
+    etunimi => 0,
+    seikkasana => 0,
+};
+
+use constant BASEFORM_WEIGHTS => {
+    puola => 1,
+    pidin => 1,
+};
+
+use constant PARTICIPLE_WEIGHTS => {
+    agent => 1,
+};
+
+use constant COMPARISON_WEIGHTS => {
+    positive => 0, # ?
+    superlative => 1,
+};
+
+use constant PERSON_WEIGHTS => {
+    1 => 0,
+    2 => 1,
+    3 => 0,
+    4 => 0,
+};
+
 # Preloaded methods go here.
 
 sub new($@)
@@ -64,8 +107,54 @@ sub suggest($)
 sub analyze($)
 {
     my ($self, $word) = @_;
-    my $r = analyze_voikko($self, $word);
-    return @$r;
+    my $rr = analyze_voikko($self, $word);
+    for my $r (@$rr) {
+	my $c = 0;
+	if (defined $r->{SIJAMUOTO}) {
+	    my $w = SIJAMUOTO_WEIGHTS->{$r->{SIJAMUOTO}}; 
+	    $c += defined $w ? $w : 1;
+	}
+	if (defined $r->{MOOD}) {
+	    my $w = MOOD_WEIGHTS->{$r->{MOOD}};
+	    $c += defined $w ? $w : 1;
+	}
+	if (defined $r->{CLASS}) {
+	    my $class = $r->{CLASS};
+	    if (($class eq 'paikannimi' || $class eq 'etunimi') && (ucfirst lc $word) ne $word) {
+		# If the word does not start with a capital letter, it might not be a proper noun
+		$c += 1;
+	    }
+	    my $w = CLASS_WEIGHTS->{$class};
+	    $c += defined $w ? $w : 1;
+	}
+	if (defined $r->{COMPARISON}) {
+	    my $w = COMPARISON_WEIGHTS->{$r->{COMPARISON}};
+	    $c += defined $w ? $w : 1;
+	}
+	if (defined $r->{PARTICIPLE}) {
+	    my $w = PARTICIPLE_WEIGHTS->{$r->{PARTICIPLE}};
+	    $c += defined $w ? $w : 1;
+	}
+	if (defined $r->{PERSON}) {
+	    my $w = PERSON_WEIGHTS->{$r->{PERSON}};
+	    die "error: $r->{PERSON}" if !defined $w;
+	    $c += $w;
+	}
+	if (defined $r->{NUMBER} && $r->{NUMBER} eq 'plural') {
+	    $c += 1;
+	}
+	if (defined $r->{STRUCTURE}) {
+	    my $parts = () = $r->{STRUCTURE} =~ m/=/g;
+	    die "error" if $parts < 1;
+	    $c += $parts - 1;
+	}
+	if (defined $r->{BASEFORM}) {
+	    my $w = BASEFORM_WEIGHTS->{$r->{BASEFORM}};
+	    $c += $w if $w;
+	}
+	$r->{COMPLEXITY} = $c;
+    }
+    return sort { $a->{COMPLEXITY} <=> $b->{COMPLEXITY} } @$rr;
 }
 
 sub hyphenate($)
