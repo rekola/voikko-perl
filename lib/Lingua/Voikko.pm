@@ -146,7 +146,7 @@ sub analyze($)
 	if (defined $r->{STRUCTURE}) {
 	    my $parts = () = $r->{STRUCTURE} =~ m/=/g;
 	    die "error" if $parts < 1;
-	    $c += $parts - 1;
+	    $c += 2 * ($parts - 1);
 	}
 	if (defined $r->{BASEFORM}) {
 	    my $w = BASEFORM_WEIGHTS->{$r->{BASEFORM}};
