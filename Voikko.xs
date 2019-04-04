@@ -6,6 +6,7 @@
 #include "ppport.h"
 
 #include <libvoikko/voikko.h>
+#include <stdio.h>
 
 MODULE = Lingua::Voikko		PACKAGE = Lingua::Voikko		
 

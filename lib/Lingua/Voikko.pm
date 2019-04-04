@@ -36,28 +36,79 @@ XSLoader::load('Lingua::Voikko', $VERSION);
 use constant SIJAMUOTO_WEIGHTS => {
     nimento => 0,
     keinonto => 2,
+    osanto => 2,
+    sisatulento => 0,
 };
 
 use constant MOOD_WEIGHTS => {
     'A-infinitive' => 0,
     'MA-infinitive' => 0,
     indicative => 0,
-    imperative => 2,
+    imperative => 1,
+};
+
+use constant TENSE_WEIGHTS => {
+    'past_imperfective' => 1,
+    'present_simple' => 0,
 };
 
 use constant CLASS_WEIGHTS => {
-    huudahdussana => 1,
-    nimisana => 0,
-    teonsana => 0,
-    laatusana => 0,
-    paikannimi => 0,
-    etunimi => 0,
-    seikkasana => 0,
+    huudahdussana => 2,
+    nimisana => 2,
+    teonsana => 2,
+    laatusana => 2,
+    paikannimi => 1,
+    etunimi => 1,
+    nimi => 1,
+    sukunimi => 0, # words such as Koivisto and Soini
+    seikkasana => 2,
 };
 
 use constant BASEFORM_WEIGHTS => {
     puola => 1,
+    varjopuola => 1,
     pidin => 1,
+    suoda => 1,
+    kirjo => 1,
+    luokki => 2,
+    voi => 1,
+    vaalia => 1,
+    kulti => 2,
+    murhakulti => 2,
+    
+    kaveriporukassa => 1000,
+    porukassa => 1000,
+    hertsikassa => 1000,
+    työporukassa => 1000,
+    kurikassa => 1000,
+    sähkötupakassa => 1000,
+    koirankakassa => 1000,
+    ydinporukassa => 1000,
+    majakassa => 1000,
+    hutikassa => 1000,
+    torakassa => 1000,
+    karsikassa => 1000,
+    aulankassa => 1000,
+    hetekassa => 1000,
+    rakennusurakassa => 1000,
+    urakassa => 1000,
+    potaattiurakassa => 1000,
+    toonikassa => 1000,
+    sopukassa => 1000,
+    namikassa => 1000,
+    vilkkumajakassa => 1000,
+    majakassa => 1000,
+    mansikassa => 1000,
+    tupakassa => 1000,
+    
+    gedit => 1000,
+    pine => 1000,
+    mutt => 1000,
+    lyx => 1000,
+    latex => 1000,
+    aspell => 1000,
+    yum => 1000,
+    tex => 1000
 };
 
 use constant PARTICIPLE_WEIGHTS => {
@@ -70,7 +121,7 @@ use constant COMPARISON_WEIGHTS => {
 };
 
 use constant PERSON_WEIGHTS => {
-    1 => 0,
+    1 => 1,
     2 => 1,
     3 => 0,
     4 => 0,
@@ -114,13 +165,20 @@ sub analyze($)
 	    my $w = SIJAMUOTO_WEIGHTS->{$r->{SIJAMUOTO}}; 
 	    $c += defined $w ? $w : 1;
 	}
+	if (defined $r->{POSSESSIVE}) {
+	    $c++;
+	}
 	if (defined $r->{MOOD}) {
 	    my $w = MOOD_WEIGHTS->{$r->{MOOD}};
 	    $c += defined $w ? $w : 1;
 	}
+	if (defined $r->{TENSE}) {
+	    my $w = TENSE_WEIGHTS->{$r->{TENSE}};
+	    $c += defined $w ? $w : 1;
+	}
 	if (defined $r->{CLASS}) {
 	    my $class = $r->{CLASS};
-	    if (($class eq 'paikannimi' || $class eq 'etunimi') && (ucfirst lc $word) ne $word) {
+	    if (($class eq 'paikannimi' || $class eq 'etunimi' || $class eq 'sukunimi' || $class eq 'nimi') && (ucfirst lc $word) ne $word) {
 		# If the word does not start with a capital letter, it might not be a proper noun
 		$c += 1;
 	    }
@@ -143,10 +201,13 @@ sub analyze($)
 	if (defined $r->{NUMBER} && $r->{NUMBER} eq 'plural') {
 	    $c += 1;
 	}
-	if (defined $r->{STRUCTURE}) {
-	    my $parts = () = $r->{STRUCTURE} =~ m/=/g;
-	    die "error" if $parts < 1;
-	    $c += 2 * ($parts - 1);
+	if (defined $r->{WORDBASES}) {
+	    my $p = 0;
+	    while ($r->{WORDBASES} =~ /\+[^\(]+\([^\)]+\)/g) {
+		$p++;
+	    }
+	    # print STDERR "parts from $r->{WORDBASES}: $p\n";
+	    $c += 3 * $p;
 	}
 	if (defined $r->{BASEFORM}) {
 	    my $w = BASEFORM_WEIGHTS->{$r->{BASEFORM}};
